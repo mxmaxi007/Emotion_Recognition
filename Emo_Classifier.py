@@ -15,6 +15,8 @@ from deap import tools
 from scoop import futures,  shared
 
 multi_process=1;
+Emo_Dict={0:"Neutral", 1:"Anger", 2:"Boredom", 3:"Disgust", 4:"Fear", 5:"Happiness", 6:"Sadness"};
+Feature_Dict=dict();
 creator.create("FitnessMax", base.Fitness, weights=(1.0, ));
 creator.create("Individual", list, fitness=creator.FitnessMax);
 
@@ -59,14 +61,14 @@ def Evaluate(X, Y, individual):
     X_new=X[:, individual];
     return np.asscalar(Classifier(clf, X_new, Y)), ;
 
-def Feature_Select(feature_dict, X, Y):
-    feature_num=len(feature_dict);
+def Feature_Select(X, Y):
+    feature_num=len(Feature_Dict);
     #creator.create("FitnessMax", base.Fitness, weights=(1.0, ));
     #creator.create("Individual", list, fitness=creator.FitnessMax);
 
     IND_SIZE=100;
     POP_SIZE=100;
-    NGEN=1000;
+    NGEN=100;
     CXPB=0.8
     MUTPB=0.1
 
@@ -124,7 +126,7 @@ def Feature_Select(feature_dict, X, Y):
         pop.extend(invalid_ind);
     
         # Gather all the fitnesses in one list and print the stats
-        fits = [ind.fitness.values[0] for ind in pop];
+        fits=[ind.fitness.values[0] for ind in pop];
         
         length = len(pop);
         mean = sum(fits) / length;
@@ -133,12 +135,76 @@ def Feature_Select(feature_dict, X, Y):
         
         end=time.time();
         print("  Time {}s".format(end-start));
-        print("  Length {}".format(length));
+        #print("  Length {}".format(length));
         print("  Min {}" .format(min(fits)));
         print("  Max {}" .format(max(fits)));
         print("  Avg {}" .format(mean));
         print("  Std {}" .format(std));
+        
+    pop=toolbox.select(pop, POP_SIZE);
+    return pop;
 
+def Single_Revelance(X, Y):
+    for i in range(7):
+        Y_new=np.zeros(Y.size, dtype=int);
+        for j in range(Y.size):
+            if Y[j]==i:
+                Y_new[j]=1;
+                
+        pop=Feature_Select(X, Y_new);
+        # Gather all the fitnesses in one list and print the stats
+        fits=[ind.fitness.values[0] for ind in pop];
+        length = len(pop);
+        mean = sum(fits) / length;
+        sum2 = sum(x*x for x in fits);
+        std = abs(sum2 / length - mean**2)**0.5;
+        
+        feature_file=open("Single/"+Emo_Dict[i]+".txt", 'w');
+        
+        feature_file.write("Min {}\n" .format(min(fits)));
+        feature_file.write("Max {}\n" .format(max(fits)));
+        feature_file.write("Avg {}\n" .format(mean));
+        feature_file.write("Std {}\n" .format(std));
+        
+        for ind in pop:
+            feature_ind=list();
+            for feature_label in ind:
+                feature_ind.append(Feature_Dict[feature_label]);
+            feature_file.write(str(ind.fitness.values[0])+' '+' '.join(feature_ind)+'\n');
+        feature_file.close();
+        print("***  {} Finished  ***\n".format(Emo_Dict[i]));
+
+def Double_Revelance(X, Y):
+    for i in range(7):
+        for j in range(i+1, 7):
+            valid_list=list();
+            for k in range(Y.size):
+                if Y[k]==i or Y[k]==j:
+                    valid_list.append(k);
+                
+            pop=Feature_Select(X[valid_list], Y[valid_list]);
+            # Gather all the fitnesses in one list and print the stats
+            fits=[ind.fitness.values[0] for ind in pop];
+            length = len(pop);
+            mean = sum(fits) / length;
+            sum2 = sum(x*x for x in fits);
+            std = abs(sum2 / length - mean**2)**0.5;
+        
+            feature_file=open("Double/"+Emo_Dict[i] + '_' + Emo_Dict[j] + ".txt", 'w');
+        
+            feature_file.write("Min {}\n" .format(min(fits)));
+            feature_file.write("Max {}\n" .format(max(fits)));
+            feature_file.write("Avg {}\n" .format(mean));
+            feature_file.write("Std {}\n" .format(std));
+        
+            for ind in pop:
+                feature_ind=list();
+                for feature_label in ind:
+                    feature_ind.append(Feature_Dict[feature_label]);
+                feature_file.write(str(ind.fitness.values[0]) + ' ' + ' '.join(feature_ind) + '\n');
+            feature_file.close();
+            
+            print("***  {}_{} Finished  ***\n".format(Emo_Dict[i], Emo_Dict[j]));
 
 if __name__=="__main__":
     if len(sys.argv)!=2:
@@ -150,8 +216,8 @@ if __name__=="__main__":
     feature_matrix=np.array(0);
     label_vector=np.array(0);
     flag=0;
-    feature_dict=dict();
-	
+    start=time.time();
+    
     for file_name in f_dir:
         file_path=os.path.join(dir_path, file_name);
         if os.path.isfile(file_path) and re.match(".*.csv", file_name):
@@ -176,23 +242,27 @@ if __name__=="__main__":
                 i=0;
                 for temp in line_list[4:-5]:
                     temp_split=re.split(" ", temp);
-                    feature_dict[i]=temp_split[1];
+                    Feature_Dict[i]=temp_split[1];
                     i+=1;
                 flag=1;
-    #print(feature_dict);
+    #print(Feature_Dict);
 
-    print("Feature Numbers: {}".format(len(feature_dict)));
+    print("Feature Numbers: {}".format(len(Feature_Dict)));
     print("Sample Numbers: {}".format(label_vector.size));
-    
-    #X=feature_matrix.copy();
-    #Y=label_vector.copy();
 
-    Feature_Select(feature_dict, feature_matrix, label_vector);
+    Single_Revelance(feature_matrix, label_vector);
+    Double_Revelance(feature_matrix, label_vector);
+    
+    #Feature_Select(feature_matrix, label_vector);
+    
     #clf=svm.SVC(gamma=0.001, C=100);
     #print(Classifier(clf, feature_matrix, label_vector));
     
     #clt=cluster.KMeans(n_clusters=7);
     #Cluster(clt, feature_matrix, label_vector);
+    
+    end=time.time();
+    print("Total Time {}s".format(end-start));
 
     
     
