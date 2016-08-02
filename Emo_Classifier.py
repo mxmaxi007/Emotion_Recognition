@@ -71,8 +71,8 @@ def Train_Classifier(X, Y, clf_list_list, clf_feature_list_list):
                     sample_list.append(k);
     
             clf_feature_list.append(feature_list);
-            #clf_base=linear_model.LogisticRegression(random_state=1);
-            clf_base=svm.SVC(random_state=1);
+            clf_base=linear_model.LogisticRegression(random_state=1);
+            #clf_base=svm.LinearSVC(random_state=1);
             Classifier(clf_base, X[np.ix_(sample_list, feature_list)], Y[sample_list]);
             clf_list.append(clf_base);
             
@@ -108,7 +108,9 @@ def Predict_Result(X, Y, clf_list_list, clf_feature_list_list):
                 result_matrix[i][j]=result;
                 result_matrix[j][i]=result;
         result_list.append(Judge_Winner(result_matrix, reco_vector));
+    print("***  Target Label  ***");
     print(Y);
+    print("***  Predict Label  ***");
     print(result_list);
     right_num=0;
     for predict, target in zip(result_list, Y):
@@ -165,13 +167,16 @@ if __name__=="__main__":
                 flag=1;
     #print(Feature_Dict);
 
-    print("Feature Numbers: {}".format(len(Feature_Dict)));
-    print("Sample Numbers: {}".format(label_vector.size));
+    print("Feature Number: {}".format(len(Feature_Dict)));
+    print("Sample Number: {}".format(label_vector.size));
     
     clf_list_list=list();
     clf_feature_list_list=list();
     Train_Classifier(feature_matrix[:400], label_vector[:400], clf_list_list, clf_feature_list_list);
     Predict_Result(feature_matrix[401:], label_vector[401:], clf_list_list, clf_feature_list_list);
+    
+    #clf=linear_model.LogisticRegression(random_state=1);
+    #print(clf.fit(feature_matrix[:500], label_vector[:500]).score(feature_matrix[501:], label_vector[501:]));
      
     
     

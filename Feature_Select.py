@@ -38,26 +38,14 @@ def Judge_Label(file_name):
         return 6; 
         
 def Classifier(clf, X, Y):
-    #print(clf.fit(X[:-100], Y[:-100]).score(X[-100:], Y[-100:]));
-    #print(clf.predict(X[-1:]));
     k_fold=cross_validation.KFold(len(X), n_folds=3);
-    #X_folds=np.array_split(X, 3);
-    #Y_folds=np.array_split(Y, 3);
-    #score=list()
-    #for train_indices, test_indices in k_fold:
-    #    score.append(clf.fit(X[train_indices], Y[train_indices]).score(X[test_indices], Y[test_indices]));
-    #print(score);
     score_list=cross_validation.cross_val_score(clf, X, Y, cv=k_fold, n_jobs=-1);
     return sum(score_list)/len(score_list);
-
-def Cluster(clt, X, Y):
-    clt.fit(X);
-    print(clt.labels_[::10]);
-    print(Y[::10]);    
+    
 
 def Evaluate(X, Y, individual):
-    #clf=svm.SVC(gamma=0.001, C=100);
-    clf=linear_model.LogisticRegression();
+    clf=svm.SVC();
+    #clf=linear_model.LogisticRegression();
     X_new=X[:, individual];
     return np.asscalar(Classifier(clf, X_new, Y)), ;
 
@@ -68,7 +56,7 @@ def Feature_Select(X, Y):
 
     IND_SIZE=100;
     POP_SIZE=100;
-    NGEN=100;
+    NGEN=300;
     CXPB=0.8
     MUTPB=0.1
 
@@ -79,7 +67,8 @@ def Feature_Select(X, Y):
 
     toolbox.register("evaluate", Evaluate, X, Y);
     toolbox.register("mate", tools.cxTwoPoint);
-    toolbox.register("mutate", tools.mutFlipBit, indpb=0.05);
+    #toolbox.register("mutate", tools.mutFlipBit, indpb=0.05);
+    toolbox.register("mutate", tools.mutUniformInt, low=0, up=feature_num-1, indpb=0.05);
     toolbox.register("select", tools.selTournament, tournsize=3);
     
     if multi_process==1:
@@ -159,7 +148,7 @@ def Single_Revelance(X, Y):
         sum2 = sum(x*x for x in fits);
         std = abs(sum2 / length - mean**2)**0.5;
         
-        feature_file=open("Single/"+Emo_Dict[i]+".txt", 'w');
+        feature_file=open("Single_SVM/"+Emo_Dict[i]+".txt", 'w');
         
         feature_file.write("Min {}\n" .format(min(fits)));
         feature_file.write("Max {}\n" .format(max(fits)));
@@ -190,7 +179,7 @@ def Double_Revelance(X, Y):
             sum2 = sum(x*x for x in fits);
             std = abs(sum2 / length - mean**2)**0.5;
         
-            feature_file=open("Double/"+Emo_Dict[i] + '_' + Emo_Dict[j] + ".txt", 'w');
+            feature_file=open("Double_SVM/"+Emo_Dict[i] + '_' + Emo_Dict[j] + ".txt", 'w');
         
             feature_file.write("Min {}\n" .format(min(fits)));
             feature_file.write("Max {}\n" .format(max(fits)));
@@ -249,19 +238,12 @@ if __name__=="__main__":
                 flag=1;
     #print(Feature_Dict);
 
-    print("Feature Numbers: {}".format(len(Feature_Dict)));
-    print("Sample Numbers: {}".format(label_vector.size));
+    print("Feature Number: {}".format(len(Feature_Dict)));
+    print("Sample Number: {}".format(label_vector.size));
 
     Single_Revelance(feature_matrix, label_vector);
     Double_Revelance(feature_matrix, label_vector);
     
-    #Feature_Select(feature_matrix, label_vector);
-    
-    #clf=svm.SVC(gamma=0.001, C=100);
-    #print(Classifier(clf, feature_matrix, label_vector));
-    
-    #clt=cluster.KMeans(n_clusters=7);
-    #Cluster(clt, feature_matrix, label_vector);
     
     end=time.time();
     print("Total Time {}s".format(end-start));
