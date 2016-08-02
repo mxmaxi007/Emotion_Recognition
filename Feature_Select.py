@@ -68,7 +68,7 @@ def Feature_Select(X, Y):
 
     IND_SIZE=100;
     POP_SIZE=100;
-    NGEN=300;
+    NGEN=100;
     CXPB=0.8
     MUTPB=0.1
 
@@ -225,6 +225,7 @@ if __name__=="__main__":
             line_list=fp.readlines();
             line=line_list[-1];
             fp.close();
+            line=line.strip();
             line_split=re.split(",", line);
             line_split_len=len(line_split);
             vector=np.zeros((line_split_len-3));
@@ -241,6 +242,7 @@ if __name__=="__main__":
             if flag==0:
                 i=0;
                 for temp in line_list[4:-5]:
+                    temp=temp.strip();
                     temp_split=re.split(" ", temp);
                     Feature_Dict[i]=temp_split[1];
                     i+=1;
