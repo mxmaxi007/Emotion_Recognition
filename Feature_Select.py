@@ -8,7 +8,7 @@ import os
 import random
 
 import numpy as np
-from sklearn import svm, cross_validation, cluster, linear_model
+from sklearn import svm, cross_validation, linear_model
 from deap import base
 from deap import creator
 from deap import tools
@@ -44,8 +44,8 @@ def Classifier(clf, X, Y):
     
 
 def Evaluate(X, Y, individual):
-    clf=svm.SVC();
-    #clf=linear_model.LogisticRegression();
+    #clf=svm.SVC();
+    clf=linear_model.LogisticRegression();
     X_new=X[:, individual];
     return np.asscalar(Classifier(clf, X_new, Y)), ;
 
@@ -85,6 +85,7 @@ def Feature_Select(X, Y):
     for ind, fit in zip(pop, fitness):
         ind.fitness.values=fit;
 
+    pre_avg=0;
     for g in range(NGEN):
         print("-- Generation {} --".format(g+1));
         #offspring=toolbox.select(pop, POP_SIZE);
@@ -124,11 +125,14 @@ def Feature_Select(X, Y):
         
         end=time.time();
         print("  Time {}s".format(end-start));
-        #print("  Length {}".format(length));
         print("  Min {}" .format(min(fits)));
         print("  Max {}" .format(max(fits)));
         print("  Avg {}" .format(mean));
         print("  Std {}" .format(std));
+        
+        if abs(mean-pre_avg)<1e-5 and std<1e-2:
+            break;
+        pre_avg=mean;
         
     pop=toolbox.select(pop, POP_SIZE);
     return pop;
@@ -148,7 +152,7 @@ def Single_Revelance(X, Y):
         sum2 = sum(x*x for x in fits);
         std = abs(sum2 / length - mean**2)**0.5;
         
-        feature_file=open("Single_SVM/"+Emo_Dict[i]+".txt", 'w');
+        feature_file=open("Single/"+Emo_Dict[i]+".txt", 'w');
         
         feature_file.write("Min {}\n" .format(min(fits)));
         feature_file.write("Max {}\n" .format(max(fits)));
@@ -179,7 +183,7 @@ def Double_Revelance(X, Y):
             sum2 = sum(x*x for x in fits);
             std = abs(sum2 / length - mean**2)**0.5;
         
-            feature_file=open("Double_SVM/"+Emo_Dict[i] + '_' + Emo_Dict[j] + ".txt", 'w');
+            feature_file=open("Double/"+Emo_Dict[i] + '_' + Emo_Dict[j] + ".txt", 'w');
         
             feature_file.write("Min {}\n" .format(min(fits)));
             feature_file.write("Max {}\n" .format(max(fits)));
@@ -194,18 +198,16 @@ def Double_Revelance(X, Y):
             feature_file.close();
             
             print("***  {}_{} Finished  ***\n".format(Emo_Dict[i], Emo_Dict[j]));
-
-if __name__=="__main__":
-    if len(sys.argv)!=2:
-        print(sys.argv);
-        print("Usage: python " + sys.argv[0] + " feature_dir\n");
-        sys.exit(2);
-    dir_path=sys.argv[1];
+            
+def Load_Feature(dir_path):
     f_dir=os.listdir(dir_path);
-    feature_matrix=np.array(0);
-    label_vector=np.array(0);
+    #feature_matrix=np.array(0);
+    #label_vector=np.array(0);
+    X_train=np.array(0);
+    Y_train=np.array(0);
+    X_test=np.array(0);
+    Y_test=np.array(0);
     flag=0;
-    start=time.time();
     
     for file_name in f_dir:
         file_path=os.path.join(dir_path, file_name);
@@ -222,12 +224,22 @@ if __name__=="__main__":
             for value in line_split[2:-1]:
                 vector[n]=np.float64(value);
                 n+=1;
-            if(feature_matrix.ndim==0):
-                feature_matrix=vector.copy();
-                label_vector=Judge_Label(file_name);
+            if file_name[0:2]=="03" or file_name[0:2]=="08":
+                if X_test.ndim==0:
+                    X_test=vector.copy();
+                    Y_test=Judge_Label(file_name);
+                else:
+                    X_test=np.vstack([X_test, vector]);
+                    Y_test=np.hstack([Y_test, Judge_Label(file_name)]);
+                    
             else:
-                feature_matrix=np.vstack([feature_matrix, vector]);
-                label_vector=np.hstack([label_vector, Judge_Label(file_name)]);
+                if X_train.ndim==0:
+                    X_train=vector.copy();
+                    Y_train=Judge_Label(file_name);
+                else:
+                    X_train=np.vstack([X_train, vector]);
+                    Y_train=np.hstack([Y_train, Judge_Label(file_name)]);
+                    
             if flag==0:
                 i=0;
                 for temp in line_list[4:-5]:
@@ -239,11 +251,23 @@ if __name__=="__main__":
     #print(Feature_Dict);
 
     print("Feature Number: {}".format(len(Feature_Dict)));
-    print("Sample Number: {}".format(label_vector.size));
-
-    Single_Revelance(feature_matrix, label_vector);
-    Double_Revelance(feature_matrix, label_vector);
+    print("Train Sample Number: {}".format(Y_train.size));
+    print("Train Sample Number: {}".format(Y_test.size));
+    return X_train, Y_train, X_test, Y_test;
     
+if __name__=="__main__":
+    if len(sys.argv)!=2:
+        print(sys.argv);
+        print("Usage: python " + sys.argv[0] + " feature_dir\n");
+        sys.exit(2);
+    
+    start=time.time();
+    dir_path=sys.argv[1];
+    
+    X_train, Y_train, X_test, Y_test=Load_Feature(dir_path);
+
+    #Single_Revelance(feature_matrix, label_vector);
+    Double_Revelance(X_train, Y_train);
     
     end=time.time();
     print("Total Time {}s".format(end-start));

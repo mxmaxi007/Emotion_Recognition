@@ -43,7 +43,7 @@ def Classifier(clf, X, Y):
     #score_list=cross_validation.cross_val_score(clf, X, Y, cv=k_fold, n_jobs=-1);
     #return sum(score_list)/len(score_list);
     
-def Train_Classifier(X, Y, clf_list_list, clf_feature_list_list):
+def Train_Classifier(feature_sel_dir_path, X, Y, clf_list_list, clf_feature_list_list):
     for i in range(Emo_Num):
         clf_list=list();
         clf_feature_list=list();
@@ -118,19 +118,14 @@ def Predict_Result(X, Y, clf_list_list, clf_feature_list_list):
             right_num+=1;
     print("Accuracy: {}".format(float(right_num)/len(result_list)));
     
-if __name__=="__main__":
-    if len(sys.argv)!=3:
-        print(sys.argv);
-        print("Usage: python " + sys.argv[0] + " feature_dir feature_sel_dir\n");
-        sys.exit(2);
-
-    start=time.time();
-    feature_dir_path=sys.argv[1];
-    feature_sel_dir_path=sys.argv[2];
-    
+def Load_Feature(feature_dir_path):
     f_dir=os.listdir(feature_dir_path);
-    feature_matrix=np.array(0);
-    label_vector=np.array(0);
+    #feature_matrix=np.array(0);
+    #label_vector=np.array(0);
+    X_train=np.array(0);
+    Y_train=np.array(0);
+    X_test=np.array(0);
+    Y_test=np.array(0);
     flag=0;
     
     for file_name in f_dir:
@@ -150,12 +145,21 @@ if __name__=="__main__":
                 vector[n]=np.float64(value);
                 n+=1;
                 
-            if(feature_matrix.ndim==0):
-                feature_matrix=vector.copy();
-                label_vector=Judge_Label(file_name);
+            if file_name[0:2]=="03" or file_name[0:2]=="08":
+                if X_test.ndim==0:
+                    X_test=vector.copy();
+                    Y_test=Judge_Label(file_name);
+                else:
+                    X_test=np.vstack([X_test, vector]);
+                    Y_test=np.hstack([Y_test, Judge_Label(file_name)]);
+                    
             else:
-                feature_matrix=np.vstack([feature_matrix, vector]);
-                label_vector=np.hstack([label_vector, Judge_Label(file_name)]);
+                if X_train.ndim==0:
+                    X_train=vector.copy();
+                    Y_train=Judge_Label(file_name);
+                else:
+                    X_train=np.vstack([X_train, vector]);
+                    Y_train=np.hstack([Y_train, Judge_Label(file_name)]);
                 
             if flag==0:
                 i=0;
@@ -168,12 +172,26 @@ if __name__=="__main__":
     #print(Feature_Dict);
 
     print("Feature Number: {}".format(len(Feature_Dict)));
-    print("Sample Number: {}".format(label_vector.size));
+    print("Train Sample Number: {}".format(Y_train.size));
+    print("Test Sample Number: {}".format(Y_test.size));
+    return X_train, Y_train, X_test, Y_test;
+    
+if __name__=="__main__":
+    if len(sys.argv)!=3:
+        print(sys.argv);
+        print("Usage: python " + sys.argv[0] + " feature_dir feature_sel_dir\n");
+        sys.exit(2);
+
+    start=time.time();
+    feature_dir_path=sys.argv[1];
+    feature_sel_dir_path=sys.argv[2];
+    
+    X_train, Y_train, X_test, Y_test=Load_Feature(feature_dir_path);
     
     clf_list_list=list();
     clf_feature_list_list=list();
-    Train_Classifier(feature_matrix[:400], label_vector[:400], clf_list_list, clf_feature_list_list);
-    Predict_Result(feature_matrix[401:], label_vector[401:], clf_list_list, clf_feature_list_list);
+    Train_Classifier(feature_sel_dir_path, X_train, Y_train, clf_list_list, clf_feature_list_list);
+    Predict_Result(X_test, Y_test, clf_list_list, clf_feature_list_list);
     
     #clf=linear_model.LogisticRegression(random_state=1);
     #print(clf.fit(feature_matrix[:500], label_vector[:500]).score(feature_matrix[501:], label_vector[501:]));
