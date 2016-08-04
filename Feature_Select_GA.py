@@ -42,14 +42,15 @@ def Classifier(clf, X, Y):
     score_list=cross_validation.cross_val_score(clf, X, Y, cv=k_fold, n_jobs=-1);
     return sum(score_list)/len(score_list);
     
-
 def Evaluate(X, Y, individual):
+    if len(individual)==0:
+        return 0;
     #clf=svm.SVC();
     clf=linear_model.LogisticRegression();
     X_new=X[:, individual];
     return np.asscalar(Classifier(clf, X_new, Y)), ;
 
-def Feature_Select(X, Y):
+def Feature_Select_GA(X, Y):
     feature_num=len(Feature_Dict);
     #creator.create("FitnessMax", base.Fitness, weights=(1.0, ));
     #creator.create("Individual", list, fitness=creator.FitnessMax);
@@ -67,7 +68,6 @@ def Feature_Select(X, Y):
 
     toolbox.register("evaluate", Evaluate, X, Y);
     toolbox.register("mate", tools.cxTwoPoint);
-    #toolbox.register("mutate", tools.mutFlipBit, indpb=0.05);
     toolbox.register("mutate", tools.mutUniformInt, low=0, up=feature_num-1, indpb=0.05);
     toolbox.register("select", tools.selTournament, tournsize=3);
     
@@ -130,7 +130,7 @@ def Feature_Select(X, Y):
         print("  Avg {}" .format(mean));
         print("  Std {}" .format(std));
         
-        if abs(mean-pre_avg)<1e-5 and std<1e-2:
+        if abs(mean-pre_avg)<1e-5 and std<1e-5:
             break;
         pre_avg=mean;
         
@@ -144,7 +144,7 @@ def Single_Revelance(X, Y):
             if Y[j]==i:
                 Y_new[j]=1;
                 
-        pop=Feature_Select(X, Y_new);
+        pop=Feature_Select_GA(X, Y_new);
         # Gather all the fitnesses in one list and print the stats
         fits=[ind.fitness.values[0] for ind in pop];
         length = len(pop);
@@ -175,7 +175,7 @@ def Double_Revelance(X, Y):
                 if Y[k]==i or Y[k]==j:
                     valid_list.append(k);
                 
-            pop=Feature_Select(X[valid_list], Y[valid_list]);
+            pop=Feature_Select_GA(X[valid_list], Y[valid_list]);
             # Gather all the fitnesses in one list and print the stats
             fits=[ind.fitness.values[0] for ind in pop];
             length = len(pop);
@@ -198,7 +198,32 @@ def Double_Revelance(X, Y):
             feature_file.close();
             
             print("***  {}_{} Finished  ***\n".format(Emo_Dict[i], Emo_Dict[j]));
+ 
+def Global_Revelance(X, Y):
+    pop=Feature_Select_GA(X, Y);
+    # Gather all the fitnesses in one list and print the stats
+    fits=[ind.fitness.values[0] for ind in pop];
+    length = len(pop);
+    mean = sum(fits) / length;
+    sum2 = sum(x*x for x in fits);
+    std = abs(sum2 / length - mean**2)**0.5;
+        
+    feature_file=open("Global/Global_GA_Logistic.txt", 'w');
+        
+    feature_file.write("Min {}\n" .format(min(fits)));
+    feature_file.write("Max {}\n" .format(max(fits)));
+    feature_file.write("Avg {}\n" .format(mean));
+    feature_file.write("Std {}\n" .format(std));
+        
+    for ind in pop:
+        feature_ind=list();
+        for feature_label in ind:
+            feature_ind.append(Feature_Dict[feature_label]);
+        feature_file.write(str(ind.fitness.values[0]) + ' ' + ' '.join(feature_ind) + '\n');
+    feature_file.close();
             
+    print("*** Global Finished  ***\n");
+    
 def Load_Feature(dir_path):
     f_dir=os.listdir(dir_path);
     #feature_matrix=np.array(0);
@@ -266,8 +291,9 @@ if __name__=="__main__":
     
     X_train, Y_train, X_test, Y_test=Load_Feature(dir_path);
 
-    #Single_Revelance(feature_matrix, label_vector);
-    Double_Revelance(X_train, Y_train);
+    #Single_Revelance(X_train, Y_train);
+    #Double_Revelance(X_train, Y_train);
+    Global_Revelance(X_train, Y_train);
     
     end=time.time();
     print("Total Time {}s".format(end-start));

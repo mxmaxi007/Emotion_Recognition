@@ -193,8 +193,9 @@ if __name__=="__main__":
     Train_Classifier(feature_sel_dir_path, X_train, Y_train, clf_list_list, clf_feature_list_list);
     Predict_Result(X_test, Y_test, clf_list_list, clf_feature_list_list);
     
-    #clf=linear_model.LogisticRegression(random_state=1);
-    #print(clf.fit(feature_matrix[:500], label_vector[:500]).score(feature_matrix[501:], label_vector[501:]));
+    feature_list=Feature_Select_SFFS(X_train, Y_train);
+    clf=linear_model.LogisticRegression(random_state=1);
+    print(clf.fit(X_train[:, feature_list, Y_train).score(X_test[:, feature_list, Y_test));
      
     
     
