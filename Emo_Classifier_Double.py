@@ -10,6 +10,7 @@ import random
 import numpy as np
 from sklearn import svm, cross_validation, linear_model
 
+classifier_type=2;
 Emo_Dict={0:"Neutral", 1:"Anger", 2:"Boredom", 3:"Disgust", 4:"Fear", 5:"Happiness", 6:"Sadness"};
 Feature_Dict=dict();
 Emo_Num=7;
@@ -29,19 +30,6 @@ def Judge_Label(file_name):
         return 5;
     elif file_name[5]=='T':
         return 6; 
-
-def Classifier(clf, X, Y):
-    clf.fit(X, Y);
-    #print(clf.predict(X[-1:]));
-    #k_fold=cross_validation.KFold(len(X), n_folds=3);
-    #X_folds=np.array_split(X, 3);
-    #Y_folds=np.array_split(Y, 3);
-    #score=list();
-    #for train_indices, test_indices in k_fold:
-    #    score.append(clf.fit(X[train_indices], Y[train_indices]).score(X[test_indices], Y[test_indices]));
-    #print(score);
-    #score_list=cross_validation.cross_val_score(clf, X, Y, cv=k_fold, n_jobs=-1);
-    #return sum(score_list)/len(score_list);
     
 def Train_Classifier(feature_sel_dir_path, X, Y, clf_list_list, clf_feature_list_list):
     for i in range(Emo_Num):
@@ -71,9 +59,11 @@ def Train_Classifier(feature_sel_dir_path, X, Y, clf_list_list, clf_feature_list
                     sample_list.append(k);
     
             clf_feature_list.append(feature_list);
-            clf_base=linear_model.LogisticRegression(random_state=1);
-            #clf_base=svm.LinearSVC(random_state=1);
-            Classifier(clf_base, X[np.ix_(sample_list, feature_list)], Y[sample_list]);
+            if classifier_type==1:
+                clf_base=linear_model.LogisticRegression(random_state=1);
+            elif classifier_type==2:
+                clf_base=svm.LinearSVC(random_state=1);
+            clf_base.fit(X[np.ix_(sample_list, feature_list)], Y[sample_list]);
             clf_list.append(clf_base);
             
             #print("***  {}_{}  ***".format(i, j));
@@ -101,8 +91,6 @@ def Predict_Result(X, Y, clf_list_list, clf_feature_list_list):
         reco_vector=np.zeros(7);
         for i in range(Emo_Num):
             for j in range(i+1, Emo_Num):
-                #print(i, j);
-                #print(len(clf_feature_list_list[i][j-i-1]));
                 result=clf_list_list[i][j-i-1].predict(x[clf_feature_list_list[i][j-i-1]].reshape(1, -1));
                 reco_vector[result]+=1;
                 result_matrix[i][j]=result;
@@ -193,10 +181,8 @@ if __name__=="__main__":
     Train_Classifier(feature_sel_dir_path, X_train, Y_train, clf_list_list, clf_feature_list_list);
     Predict_Result(X_test, Y_test, clf_list_list, clf_feature_list_list);
     
-    feature_list=Feature_Select_SFFS(X_train, Y_train);
-    clf=linear_model.LogisticRegression(random_state=1);
-    print(clf.fit(X_train[:, feature_list, Y_train).score(X_test[:, feature_list, Y_test));
-     
+    
+   
     
     
 

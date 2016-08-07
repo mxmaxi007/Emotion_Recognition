@@ -15,6 +15,7 @@ from deap import tools
 from scoop import futures,  shared
 
 multi_process=1;
+classifier_type=2; #1:Logistic Regression; 2:SVM
 Emo_Dict={0:"Neutral", 1:"Anger", 2:"Boredom", 3:"Disgust", 4:"Fear", 5:"Happiness", 6:"Sadness"};
 Feature_Dict=dict();
 creator.create("FitnessMax", base.Fitness, weights=(1.0, ));
@@ -45,8 +46,10 @@ def Classifier(clf, X, Y):
 def Evaluate(X, Y, individual):
     if len(individual)==0:
         return 0;
-    #clf=svm.SVC();
-    clf=linear_model.LogisticRegression();
+    if classifier_type==1:
+        clf=linear_model.LogisticRegression();
+    elif classifier_type==2:
+        clf=svm.LinearSVC();
     X_new=X[:, individual];
     return np.asscalar(Classifier(clf, X_new, Y)), ;
 
@@ -152,7 +155,11 @@ def Single_Revelance(X, Y):
         sum2 = sum(x*x for x in fits);
         std = abs(sum2 / length - mean**2)**0.5;
         
-        feature_file=open("Single/"+Emo_Dict[i]+".txt", 'w');
+        if classifier_type==1:
+            file_path="Single_GA_Logistic/"+Emo_Dict[i]+".txt";
+        elif classifier_type==2:
+            file_path="Single_GA_SVM/"+Emo_Dict[i]+".txt";
+        feature_file=open(file_path, 'w');
         
         feature_file.write("Min {}\n" .format(min(fits)));
         feature_file.write("Max {}\n" .format(max(fits)));
@@ -183,7 +190,11 @@ def Double_Revelance(X, Y):
             sum2 = sum(x*x for x in fits);
             std = abs(sum2 / length - mean**2)**0.5;
         
-            feature_file=open("Double/"+Emo_Dict[i] + '_' + Emo_Dict[j] + ".txt", 'w');
+            if classifier_type==1:
+                file_path="Double_GA_Logistic/"+Emo_Dict[i]+".txt";
+            elif classifier_type==2:
+                file_path="Double_GA_SVM/"+Emo_Dict[i]+'_' +Emo_Dict[j]+".txt";
+            feature_file=open(file_path, 'w');
         
             feature_file.write("Min {}\n" .format(min(fits)));
             feature_file.write("Max {}\n" .format(max(fits)));
@@ -207,8 +218,12 @@ def Global_Revelance(X, Y):
     mean = sum(fits) / length;
     sum2 = sum(x*x for x in fits);
     std = abs(sum2 / length - mean**2)**0.5;
-        
-    feature_file=open("Global/Global_GA_Logistic.txt", 'w');
+     
+    if classifier_type==1:
+        file_path="Global/Global_GA_Logistic.txt";
+    elif classifier_type==2:
+        file_path="Global/Global_GA_SVM.txt";
+    feature_file=open(file_path, 'w');
         
     feature_file.write("Min {}\n" .format(min(fits)));
     feature_file.write("Max {}\n" .format(max(fits)));
@@ -292,7 +307,7 @@ if __name__=="__main__":
     X_train, Y_train, X_test, Y_test=Load_Feature(dir_path);
 
     #Single_Revelance(X_train, Y_train);
-    #Double_Revelance(X_train, Y_train);
+    Double_Revelance(X_train, Y_train);
     Global_Revelance(X_train, Y_train);
     
     end=time.time();
