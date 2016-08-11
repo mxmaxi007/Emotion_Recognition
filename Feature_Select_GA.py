@@ -306,9 +306,9 @@ if __name__=="__main__":
     
     X_train, Y_train, X_test, Y_test=Load_Feature(dir_path);
 
-    #Single_Revelance(X_train, Y_train);
-    Double_Revelance(X_train, Y_train);
-    Global_Revelance(X_train, Y_train);
+    Single_Revelance(X_train, Y_train);
+    #Double_Revelance(X_train, Y_train);
+    #Global_Revelance(X_train, Y_train);
     
     end=time.time();
     print("Total Time {}s".format(end-start));

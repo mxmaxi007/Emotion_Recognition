@@ -137,7 +137,7 @@ def Double_Revelance(X, Y):
                 
             feature_list=Feature_Select_SFFS(X[valid_list], Y[valid_list]);
             if classifier_type==1:
-                file_path="Double_SFFS_Logistic/"+Emo_Dict[i]+".txt";
+                file_path="Double_SFFS_Logistic/"+Emo_Dict[i]+'_' +Emo_Dict[j]+".txt";
             elif classifier_type==2:
                 file_path="Double_SFFS_SVM/"+Emo_Dict[i]+'_' +Emo_Dict[j]+".txt";
             feature_file=open(file_path, 'w');

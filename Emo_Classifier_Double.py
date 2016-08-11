@@ -181,6 +181,9 @@ if __name__=="__main__":
     Train_Classifier(feature_sel_dir_path, X_train, Y_train, clf_list_list, clf_feature_list_list);
     Predict_Result(X_test, Y_test, clf_list_list, clf_feature_list_list);
     
+    end=time.time();
+    print("Total Time {}s".format(end-start));
+    
     
    
     
