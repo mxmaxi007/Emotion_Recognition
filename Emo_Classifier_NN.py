@@ -15,7 +15,8 @@ import numpy as np
 from sklearn import svm, cross_validation, linear_model
 import tensorflow as tf
 
-classifier_type=2;
+validation_type=0;
+Validation_Dict={0:("03", "08"), 1:("09", "10"), 2:("11", "13"), 3:("12", "14"), 4:("15", "16")};
 Emo_Dict={0:"Neutral", 1:"Anger", 2:"Boredom", 3:"Disgust", 4:"Fear", 5:"Happiness", 6:"Sadness"};
 Feature_Dict=dict();
 Emo_Num=7;
@@ -63,7 +64,7 @@ def Load_Feature(feature_dir_path):
                 vector[n]=np.float64(value);
                 n+=1;
                 
-            if file_name[0:2]=="03" or file_name[0:2]=="08":
+            if file_name[0:2]==Validation_Dict[validation_type][0] or file_name[0:2]==Validation_Dict[validation_type][1]:
                 if X_test.ndim==0:
                     X_test=vector.copy();
                     Y_test=Judge_Label(file_name);
@@ -178,21 +179,24 @@ def Predict_Result(X, Y, clf_list_list):
     Result_Analysis(Y, result_list);    
     
 if __name__=="__main__":
-    if len(sys.argv)!=2:
+    if len(sys.argv)!=4:
         print(sys.argv);
-        print("Usage: python " + sys.argv[0] + " feature_dir\n");
+        print("Usage: python " + sys.argv[0] + " feature_dir validation_type(0-4) test_type(1:Double, 2:Global)\n");
         sys.exit(2);
 
     start=time.time();
     feature_dir_path=sys.argv[1];
+    validation_type==int(sys.argv[2]);
+    test_type=int(sys.argv[3]);
 
     X_train, Y_train, X_test, Y_test=Load_Feature(feature_dir_path);
     
-    #clf_list_list=list();
-    #Train_Classifier(X_train, Y_train, clf_list_list);
-    #Predict_Result(X_test, Y_test, clf_list_list);
-    
-    Neural_Network_Single(X_train, Y_train, X_test, Y_test);
+    if test_type==1:
+        clf_list_list=list();
+        Train_Classifier(X_train, Y_train, clf_list_list);
+        Predict_Result(X_test, Y_test, clf_list_list);
+    elif test_type==2:
+        Neural_Network_Single(X_train, Y_train, X_test, Y_test);
     
     end=time.time();
     print("Total Time {}s".format(end-start));

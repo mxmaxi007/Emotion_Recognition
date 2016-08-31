@@ -9,13 +9,14 @@ import random
 
 import numpy as np
 from sklearn import svm, cross_validation, linear_model
+from sklearn.naive_bayes import GaussianNB
 from deap import base
 from deap import creator
 from deap import tools
-from scoop import futures,  shared
+from scoop import futures, shared
 
 multi_process=1;
-classifier_type=1; #1:Logistic Regression; 2:SVM
+classifier_type=1; #1:Logistic Regression; 2:SVM; 3:Naive Bayes
 validation_type=0;
 Validation_Dict={0:("03", "08"), 1:("09", "10"), 2:("11", "13"), 3:("12", "14"), 4:("15", "16")};
 Emo_Dict={0:"Neutral", 1:"Anger", 2:"Boredom", 3:"Disgust", 4:"Fear", 5:"Happiness", 6:"Sadness"};
@@ -107,6 +108,8 @@ def Evaluate(X, Y, individual):
         clf=linear_model.LogisticRegression();
     elif classifier_type==2:
         clf=svm.LinearSVC();
+    elif classifier_type==3:
+        clf=GaussianNB();
     X_new=X[:, individual];
     return np.asscalar(Classifier(clf, X_new, Y)), ;
 
@@ -115,7 +118,7 @@ def Feature_Select_GA(X, Y):
     #creator.create("FitnessMax", base.Fitness, weights=(1.0, ));
     #creator.create("Individual", list, fitness=creator.FitnessMax);
 
-    IND_SIZE=100;
+    IND_SIZE=50;
     POP_SIZE=100;
     NGEN=300;
     CXPB=0.8
@@ -213,9 +216,11 @@ def Single_Revelance(X, Y):
         std = abs(sum2 / length - mean**2)**0.5;
         
         if classifier_type==1:
-            file_path="Single_GA_Logistic/"+Emo_Dict[i]+".txt";
+            file_path="Single_GA_Logistic/"+str(validation_type)+Emo_Dict[i]+".txt";
         elif classifier_type==2:
-            file_path="Single_GA_SVM/"+Emo_Dict[i]+".txt";
+            file_path="Single_GA_SVM/"+str(validation_type)+Emo_Dict[i]+".txt";
+        elif classifier_type==3:
+            file_path="Single_GA_NB/"+str(validation_type)+Emo_Dict[i]+".txt";
         feature_file=open(file_path, 'w');
         
         feature_file.write("Min {}\n" .format(min(fits)));
@@ -251,6 +256,8 @@ def Double_Revelance(X, Y):
                 file_path="Double_GA_Logistic_"+str(validation_type)+"/"+Emo_Dict[i]+'_' +Emo_Dict[j]+".txt";
             elif classifier_type==2:
                 file_path="Double_GA_SVM_"+str(validation_type)+"/"+Emo_Dict[i]+'_' +Emo_Dict[j]+".txt";
+            elif classifier_type==3:
+                file_path="Double_GA_NB_"+str(validation_type)+"/"+Emo_Dict[i]+'_' +Emo_Dict[j]+".txt";
             feature_file=open(file_path, 'w');
         
             feature_file.write("Min {}\n" .format(min(fits)));
@@ -280,6 +287,8 @@ def Global_Revelance(X, Y):
         file_path="Global/Global_GA_Logistic_"+str(validation_type)+".txt";
     elif classifier_type==2:
         file_path="Global/Global_GA_SVM_"+str(validation_type)+".txt";
+    elif classifier_type==3:
+        file_path="Global/Global_GA_NB_"+str(validation_type)+".txt";
     feature_file=open(file_path, 'w');
         
     feature_file.write("Min {}\n" .format(min(fits)));
@@ -300,7 +309,7 @@ def Global_Revelance(X, Y):
 if __name__=="__main__":
     if len(sys.argv)!=4:
         print(sys.argv);
-        print("Usage: python " + sys.argv[0] + " feature_dir classifier_type(1:Logistic Regression, 2:SVM) validation_type(0-4)\n");
+        print("Usage: python " + sys.argv[0] + " feature_dir classifier_type(1:Logistic Regression, 2:SVM, 3:Naive Bayes) validation_type(0-4)\n");
         sys.exit(2);
     
     start=time.time();

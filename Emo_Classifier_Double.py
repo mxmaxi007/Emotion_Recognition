@@ -9,6 +9,7 @@ import random
 
 import numpy as np
 from sklearn import svm, cross_validation, linear_model
+from sklearn.naive_bayes import GaussianNB
 
 classifier_type=1;
 validation_type=0;
@@ -16,6 +17,7 @@ Validation_Dict={0:("03", "08"), 1:("09", "10"), 2:("11", "13"), 3:("12", "14"),
 Emo_Dict={0:"Neutral", 1:"Anger", 2:"Boredom", 3:"Disgust", 4:"Fear", 5:"Happiness", 6:"Sadness"};
 Feature_Dict=dict();
 Emo_Num=7;
+load_type=1;
 
 def Judge_Label(file_name):
     if file_name[5]=='N':
@@ -91,6 +93,33 @@ def Load_Feature(feature_dir_path):
     print("Test Sample Number: {}".format(Y_test.size));
     return X_train, Y_train, X_test, Y_test;
 
+def Load_Feature_Subset(file_path, feature_list):
+    fp=open(file_path, 'r');
+    line_list=fp.readlines();
+    fp.close();
+
+    if load_type==1:
+        max_fit=0;
+        feature_set=set();
+        for line in line_list[4:]:
+            line=line.strip();
+            line_split=re.split(" +|\t+", line);
+            if float(line_split[0])>max_fit:
+                max_fit=float(line_split[0]);
+                feature_set=set(line_split[1:]);
+    elif load_type==2:
+        feature_set=set();
+        for line in line_list[4:]:
+            line=line.strip();
+            line_split=re.split(" +|\t+", line);
+            feature_set=feature_set | set(line_split[1:]);
+
+    for feature_name in list(feature_set):
+        feature_list.append(Feature_Dict[feature_name]);
+    feature_list.sort();
+
+
+
 def Train_Classifier(feature_sel_dir_path, X, Y, clf_list_list, clf_feature_list_list):
     for i in range(Emo_Num):
         clf_list=list();
@@ -98,20 +127,8 @@ def Train_Classifier(feature_sel_dir_path, X, Y, clf_list_list, clf_feature_list
         for j in range(i+1, Emo_Num):
             file_name=Emo_Dict[i]+"_"+Emo_Dict[j]+".txt";
             file_path=os.path.join(feature_sel_dir_path, file_name);
-            fp=open(file_path, 'r');
-            line_list=fp.readlines();
-            fp.close();
-    
-            feature_set=set();
-            for line in line_list[4:]:
-                line=line.strip();
-                line_split=re.split(" +|\t+", line);
-                feature_set=feature_set | set(line_split[1:]);
-                
             feature_list=list();
-            for feature_name in list(feature_set):
-                feature_list.append(Feature_Dict[feature_name]);
-            feature_list.sort();
+            Load_Feature_Subset(file_path, feature_list);
 
             sample_list=list();
             for k in range(len(Y)):
@@ -123,6 +140,8 @@ def Train_Classifier(feature_sel_dir_path, X, Y, clf_list_list, clf_feature_list
                 clf_base=linear_model.LogisticRegression(random_state=1);
             elif classifier_type==2:
                 clf_base=svm.LinearSVC(random_state=1);
+            elif classifier_type==3:
+                clf=GaussianNB(random_state=1);
             clf_base.fit(X[np.ix_(sample_list, feature_list)], Y[sample_list]);
             clf_list.append(clf_base);
             
@@ -143,22 +162,11 @@ def Judge_Winner(result_matrix, reco_vector):
         elif reco_vector[i]==max_vote:
             best_result=result_matrix[i][best_result];
     return best_result;
-   
+
+ 
 def Result_Analysis(global_feature_file, clf_feature_list_list, target_list, predict_list):
-    fp=open(global_feature_file, 'r');
-    line_list=fp.readlines();
-    fp.close();
-
-    feature_set=set();
-    for line in line_list[4:]:
-        line=line.strip();
-        line_split=re.split(" +|\t+", line);
-        feature_set=feature_set | set(line_split[1:]);
-
     feature_list=list();
-    for feature_name in list(feature_set):
-        feature_list.append(Feature_Dict[feature_name]);
-    feature_list.sort();
+    Load_Feature_Subset(global_feature_file, feature_list);
 
     print("Global_Feature_Num: {}".format(len(feature_list)));
     for i in range(Emo_Num):
@@ -201,7 +209,6 @@ def Predict_Result(X, Y, clf_list_list, clf_feature_list_list, global_feature_fi
                 result_matrix[i][j]=result;
                 result_matrix[j][i]=result;
         result_list.append(Judge_Winner(result_matrix, reco_vector));
-
     Result_Analysis(global_feature_file, clf_feature_list_list, Y, result_list);
     
 
@@ -209,7 +216,7 @@ def Predict_Result(X, Y, clf_list_list, clf_feature_list_list, global_feature_fi
 if __name__=="__main__":
     if len(sys.argv)!=6:
         print(sys.argv);
-        print("Usage: python " + sys.argv[0] + " feature_dir feature_sel_dir global_feature_file classifier_type(1:Logistic Regression, 2:SVM) validation_type(0-4)\n");
+        print("Usage: python " + sys.argv[0] + " feature_dir feature_sel_dir global_feature_file classifier_type(1:Logistic Regression, 2:SVM, 3:Naive Bayes) validation_type(0-4)\n");
         sys.exit(2);
 
     start=time.time();
